@@ -1,0 +1,239 @@
+{
+  "info": {
+    "name": "Training Management - Bulk Officer Onboarding",
+    "description": "Creates 25 officers and nominates every one of them into a Finance Awareness Programme and a Cybersecurity Awareness Programme. Run the '1 - Setup' requests once each, then run '2 - Officers > Create Officer' and each request in '3 - Nominations' through the Collection Runner with officers_data.json (25 iterations).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "departmentId", "value": "" },
+    { "key": "financeTrainingId", "value": "" },
+    { "key": "cyberTrainingId", "value": "" },
+    { "key": "officerIds", "value": "[]" },
+    { "key": "currentOfficerId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1 - Setup",
+      "item": [
+        {
+          "name": "Get Departments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{baseUrl}}/api/departments", "host": ["{{baseUrl}}"], "path": ["api", "departments"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Department",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Department created\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"departmentId\", jsonData.id);",
+                  "console.log(\"departmentId set to \" + jsonData.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"General Administration\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/departments", "host": ["{{baseUrl}}"], "path": ["api", "departments"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Training - Finance Awareness Programme",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Training created\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"financeTrainingId\", jsonData.id);",
+                  "console.log(\"financeTrainingId set to \" + jsonData.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Finance Awareness Programme\",\n  \"trainingDate\": \"2026-10-15\",\n  \"venue\": \"Head Office Auditorium\",\n  \"trainer\": \"Finance Division\",\n  \"maxParticipants\": 30\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/trainings", "host": ["{{baseUrl}}"], "path": ["api", "trainings"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Training - Cybersecurity Awareness Programme",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Training created\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "pm.collectionVariables.set(\"cyberTrainingId\", jsonData.id);",
+                  "console.log(\"cyberTrainingId set to \" + jsonData.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cybersecurity Awareness Programme\",\n  \"trainingDate\": \"2026-10-20\",\n  \"venue\": \"IT Training Center\",\n  \"trainer\": \"ICT Division\",\n  \"maxParticipants\": 30\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/trainings", "host": ["{{baseUrl}}"], "path": ["api", "trainings"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2 - Officers",
+      "item": [
+        {
+          "name": "Create Officer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Officer created\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "var jsonData = pm.response.json();",
+                  "var ids = JSON.parse(pm.collectionVariables.get(\"officerIds\") || \"[]\");",
+                  "ids.push(jsonData.id);",
+                  "pm.collectionVariables.set(\"officerIds\", JSON.stringify(ids));",
+                  "console.log(\"Created officer \" + jsonData.officerNo + \" -> id \" + jsonData.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"officerNo\": \"{{officerNo}}\",\n  \"name\": \"{{name}}\",\n  \"email\": \"{{email}}\",\n  \"department\": { \"id\": {{departmentId}} }\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/officers", "host": ["{{baseUrl}}"], "path": ["api", "officers"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3 - Nominations",
+      "item": [
+        {
+          "name": "Nominate - Finance Awareness Programme",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ids = JSON.parse(pm.collectionVariables.get(\"officerIds\") || \"[]\");",
+                  "var idx = pm.info.iteration;",
+                  "if (idx >= ids.length) {",
+                  "    throw new Error(\"No officer id for iteration \" + idx + \". Run '2 - Officers > Create Officer' for all 25 rows first.\");",
+                  "}",
+                  "pm.collectionVariables.set(\"currentOfficerId\", ids[idx]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Nomination created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainingId\": {{financeTrainingId}},\n  \"officerId\": {{currentOfficerId}},\n  \"departmentId\": {{departmentId}}\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/nominations", "host": ["{{baseUrl}}"], "path": ["api", "nominations"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Nominate - Cybersecurity Awareness Programme",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var ids = JSON.parse(pm.collectionVariables.get(\"officerIds\") || \"[]\");",
+                  "var idx = pm.info.iteration;",
+                  "if (idx >= ids.length) {",
+                  "    throw new Error(\"No officer id for iteration \" + idx + \". Run '2 - Officers > Create Officer' for all 25 rows first.\");",
+                  "}",
+                  "pm.collectionVariables.set(\"currentOfficerId\", ids[idx]);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Nomination created\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainingId\": {{cyberTrainingId}},\n  \"officerId\": {{currentOfficerId}},\n  \"departmentId\": {{departmentId}}\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/api/nominations", "host": ["{{baseUrl}}"], "path": ["api", "nominations"] }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

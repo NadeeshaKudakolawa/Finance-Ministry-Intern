@@ -31,4 +31,20 @@ public class DepartmentController {
     ) {
         return repository.save(department);
     }
+
+    @PutMapping("/{id}")
+    public Department update(
+            @PathVariable Long id,
+            @RequestBody Department department
+    ) {
+        department.setId(id);
+        return repository.save(department);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(
+            @PathVariable Long id
+    ) {
+        repository.deleteById(id);
+    }
 }

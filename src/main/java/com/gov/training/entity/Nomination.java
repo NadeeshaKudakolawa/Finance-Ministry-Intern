@@ -37,4 +37,11 @@ public class Nomination {
     private Department nominatedByDepartment;
 
     private LocalDateTime nominationDate;
+
+    // Not marked nullable=false: ddl-auto=update would otherwise try to add
+    // a NOT NULL column against existing rows and fail. Non-null is enforced
+    // in NominationService instead; existing rows should be backfilled to
+    // CONFIRMED via a one-off update statement when this deploys.
+    @Enumerated(EnumType.STRING)
+    private NominationStatus status;
 }

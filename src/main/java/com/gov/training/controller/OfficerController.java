@@ -31,4 +31,20 @@ public class OfficerController {
     ) {
         return officerRepository.save(officer);
     }
+
+    @PutMapping("/{id}")
+    public Officer update(
+            @PathVariable Long id,
+            @RequestBody Officer officer
+    ) {
+        officer.setId(id);
+        return officerRepository.save(officer);
+    }
+
+    @DeleteMapping("/{id}")
+    public void delete(
+            @PathVariable Long id
+    ) {
+        officerRepository.deleteById(id);
+    }
 }

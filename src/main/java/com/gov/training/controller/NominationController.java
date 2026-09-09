@@ -53,4 +53,37 @@ public class NominationController {
                     .body(e.getMessage());
         }
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> delete(
+            @PathVariable Long id
+    ) {
+        try {
+
+            Nomination cancelled =
+                    nominationService.cancelNomination(id);
+
+            return ResponseEntity.ok(cancelled);
+
+        } catch (RuntimeException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/training/{trainingId}/confirmed")
+    public List<Nomination> getConfirmedList(
+            @PathVariable Long trainingId
+    ) {
+        return nominationService.getConfirmedList(trainingId);
+    }
+
+    @GetMapping("/training/{trainingId}/waitlist")
+    public List<Nomination> getWaitingList(
+            @PathVariable Long trainingId
+    ) {
+        return nominationService.getWaitingList(trainingId);
+    }
 }
