@@ -1,22 +1,49 @@
 package com.gov.training.service;
 
+import com.gov.training.eligibility.EligibilityEvaluator;
+import com.gov.training.entity.Officer;
 import com.gov.training.entity.Training;
+import com.gov.training.repository.OfficerRepository;
 import com.gov.training.repository.TrainingRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 public class TrainingService {
 
     private final TrainingRepository trainingRepository;
     private final NominationService nominationService;
+    private final OfficerRepository officerRepository;
+    private final EligibilityEvaluator eligibilityEvaluator;
 
     public TrainingService(
             TrainingRepository trainingRepository,
-            NominationService nominationService
+            NominationService nominationService,
+            OfficerRepository officerRepository,
+            EligibilityEvaluator eligibilityEvaluator
     ) {
         this.trainingRepository = trainingRepository;
         this.nominationService = nominationService;
+        this.officerRepository = officerRepository;
+        this.eligibilityEvaluator = eligibilityEvaluator;
+    }
+
+    // Officers eligible for a training's programme, per the active
+    // EligibilityRuleConfig rows for its programmeCode. A training with no
+    // programmeCode has no restrictions, so every officer is eligible.
+    public List<Officer> getEligibleOfficers(Long trainingId) {
+
+        Training training = trainingRepository
+                .findById(trainingId)
+                .orElseThrow(() ->
+                        new RuntimeException("Training not found")
+                );
+
+        return officerRepository.findAll().stream()
+                .filter(officer -> eligibilityEvaluator.evaluate(officer, training).eligible())
+                .toList();
     }
 
     @Transactional
@@ -31,6 +58,7 @@ public class TrainingService {
                 );
 
         training.setTitle(updated.getTitle());
+        training.setProgrammeCode(updated.getProgrammeCode());
         training.setTrainingDate(updated.getTrainingDate());
         training.setVenue(updated.getVenue());
         training.setTrainer(updated.getTrainer());

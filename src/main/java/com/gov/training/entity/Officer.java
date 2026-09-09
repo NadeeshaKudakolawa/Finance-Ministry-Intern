@@ -3,6 +3,8 @@ package com.gov.training.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "officers")
 @Getter
@@ -22,6 +24,12 @@ public class Officer {
     private String name;
 
     private String email;
+
+    private String grade;
+
+    private String designation;
+
+    private LocalDate serviceStartDate;
 
     @ManyToOne
     @JoinColumn(name = "department_id")

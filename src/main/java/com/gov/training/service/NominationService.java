@@ -1,6 +1,8 @@
 package com.gov.training.service;
 
 import com.gov.training.dto.NominationRequest;
+import com.gov.training.eligibility.EligibilityDecision;
+import com.gov.training.eligibility.EligibilityEvaluator;
 import com.gov.training.entity.*;
 import com.gov.training.repository.*;
 import org.springframework.stereotype.Service;
@@ -17,17 +19,20 @@ public class NominationService {
     private final OfficerRepository officerRepository;
     private final TrainingRepository trainingRepository;
     private final DepartmentRepository departmentRepository;
+    private final EligibilityEvaluator eligibilityEvaluator;
 
     public NominationService(
             NominationRepository nominationRepository,
             OfficerRepository officerRepository,
             TrainingRepository trainingRepository,
-            DepartmentRepository departmentRepository
+            DepartmentRepository departmentRepository,
+            EligibilityEvaluator eligibilityEvaluator
     ) {
         this.nominationRepository = nominationRepository;
         this.officerRepository = officerRepository;
         this.trainingRepository = trainingRepository;
         this.departmentRepository = departmentRepository;
+        this.eligibilityEvaluator = eligibilityEvaluator;
     }
 
     @Transactional
@@ -54,6 +59,15 @@ public class NominationService {
                 .orElseThrow(() ->
                         new RuntimeException("Department not found")
                 );
+
+        EligibilityDecision eligibility = eligibilityEvaluator.evaluate(officer, training);
+
+        if (!eligibility.eligible()) {
+            throw new RuntimeException(
+                "Officer is not eligible for this programme: "
+                    + String.join(" ", eligibility.reasons())
+            );
+        }
 
         Optional<Nomination> existing =
                 nominationRepository.findByTrainingIdAndOfficerId(

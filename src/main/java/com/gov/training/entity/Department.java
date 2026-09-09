@@ -17,4 +17,11 @@ public class Department {
 
     @Column(nullable = false, unique = true)
     private String name;
+
+    /**
+     * Broad category this department belongs to (e.g. FINANCE, BUDGET, PLANNING, IT).
+     * Used by eligibility rules so several differently-named departments can be
+     * grouped under one category without changing rule code.
+     */
+    private String category;
 }

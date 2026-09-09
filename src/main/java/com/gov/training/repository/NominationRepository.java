@@ -4,6 +4,7 @@ import com.gov.training.entity.Nomination;
 import com.gov.training.entity.NominationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,5 +36,12 @@ public interface NominationRepository
     Optional<Nomination> findFirstByTrainingIdAndStatusOrderByNominationDateAscIdAsc(
             Long trainingId,
             NominationStatus status
+    );
+
+    boolean existsByOfficerIdAndTraining_ProgrammeCodeAndNominationDateAfterAndStatusNot(
+            Long officerId,
+            String programmeCode,
+            LocalDateTime cutoff,
+            NominationStatus excludedStatus
     );
 }

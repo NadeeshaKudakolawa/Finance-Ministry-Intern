@@ -62,4 +62,22 @@ public class TrainingController {
     ) {
         trainingRepository.deleteById(id);
     }
+
+    @GetMapping("/{id}/eligible-officers")
+    public ResponseEntity<?> getEligibleOfficers(
+            @PathVariable Long id
+    ) {
+        try {
+
+            return ResponseEntity.ok(
+                    trainingService.getEligibleOfficers(id)
+            );
+
+        } catch (RuntimeException e) {
+
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        }
+    }
 }
