@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Government Training Management</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; color: #182b43; background: #f3f6fa; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { background: #163553; color: white; padding: 32px max(24px, calc((100vw - 1100px)/2)); }
+    header p { color: #c7d9eb; margin-bottom: 0; }
+    h1 { font-size: 27px; margin: 0; }
+    main { max-width: 1148px; margin: auto; padding: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+    section { background: white; padding: 24px; border: 1px solid #dce4ee; border-radius: 12px; margin-bottom: 20px; }
+    .grid section { margin-bottom: 0; }
+    h2 { margin: 0 0 18px; font-size: 19px; }
+    label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+    input, select { display: block; width: 100%; padding: 10px 12px; margin-top: 6px; border: 1px solid #b8c7d7; border-radius: 6px; background: white; font: inherit; color: inherit; }
+    button { border: 0; border-radius: 6px; background: #176b62; color: white; padding: 11px 17px; font: inherit; cursor: pointer; }
+    button:hover { background: #10544d; }
+    button:disabled { opacity: .55; cursor: wait; }
+    :focus-visible { outline: 3px solid #dd9e29; outline-offset: 3px; }
+    .hint { color: #586b80; font-size: 14px; }
+    .message { padding: 13px 16px; border-radius: 6px; margin-bottom: 20px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .success { background: #def4e9; color: #15583e; }
+    .error { background: #ffe7e7; color: #952626; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { text-align: left; padding: 13px 10px; border-bottom: 1px solid #e2e8f0; }
+    th { color: #586b80; background: #f7f9fc; }
+    .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .section-heading h2 { margin: 0; }
+    .records { margin-top: 20px; }
+    @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } main { padding: 16px; } section { padding: 18px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Government Training Management</h1>
+    <p>Manage programmes and nominate officers across departments.</p>
+  </header>
+  <main>
+    <div id="message" role="status" aria-live="polite" hidden></div>
+    <section>
+      <h2>Nominate an officer</h2>
+      <p class="hint">Each officer can be nominated once per training programme, even by different departments.</p>
+      <form id="nomination-form">
+        <label>Training programme<select name="trainingId" required></select></label>
+        <label>Officer<select name="officerId" required></select></label>
+        <label>Nominating department<select name="departmentId" required></select></label>
+        <button type="submit">Submit nomination</button>
+      </form>
+    </section>
+    <div class="grid">
+      <section>
+        <h2>Create training programme</h2>
+        <form id="training-form">
+          <label>Training title<input name="title" required maxlength="255"></label>
+          <label>Date<input name="trainingDate" type="date" required></label>
+          <label>Venue<input name="venue" required maxlength="255"></label>
+          <label>Trainer / resource person<input name="trainer" required maxlength="255"></label>
+          <label>Maximum participants<input name="maxParticipants" type="number" min="1" max="2147483647" step="1" required></label>
+          <button type="submit">Create training</button>
+        </form>
+      </section>
+      <section>
+        <h2>Add officer</h2>
+        <form id="officer-form">
+          <label>Officer number<input name="officerNo" required maxlength="255"></label>
+          <label>Full name<input name="name" required maxlength="255"></label>
+          <label>Email<input name="email" type="email" maxlength="255"></label>
+          <label>Home department<select name="departmentId" required></select></label>
+          <button type="submit">Add officer</button>
+        </form>
+      </section>
+      <section>
+        <h2>Add department</h2>
+        <form id="department-form">
+          <label>Department name<input name="name" required maxlength="255"></label>
+          <button type="submit">Add department</button>
+        </form>
+      </section>
+      <section>
+        <h2>Getting started</h2>
+        <p class="hint">Add departments first, then officers and training programmes. Use the nomination form to register an officer for a programme.</p>
+        <p class="hint">The server checks for duplicate nominations and available places when you submit.</p>
+      </section>
+    </div>
+    <section class="records">
+      <div class="section-heading"><h2>Training programmes</h2><button id="refresh" type="button">Refresh records</button></div>
+      <div class="table-wrap"><table><thead><tr><th>Programme</th><th>Date</th><th>Venue</th><th>Trainer</th><th>Nominations / capacity</th></tr></thead><tbody id="trainings"></tbody></table></div>
+    </section>
+    <section>
+      <h2>Registered nominations</h2>
+      <div class="table-wrap"><table><thead><tr><th>Officer</th><th>Officer number</th><th>Programme</th><th>Nominating department</th></tr></thead><tbody id="nominations"></tbody></table></div>
+    </section>
+  </main>
+  <script>
+    const message = document.getElementById('message');
+    function notify(text, error = false) {
+      message.textContent = text;
+      message.className = 'message ' + (error ? 'error' : 'success');
+      message.hidden = false;
+    }
+    async function api(path, payload) {
+      const response = await fetch('/api/' + path, payload === undefined ? {} : {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      const raw = await response.text();
+      let data;
+      try { data = JSON.parse(raw); } catch { data = raw; }
+      if (!response.ok) {
+        const detail = typeof data === 'string' ? data : data.message || data.error;
+        throw new Error(detail || 'Request failed. Check your entries and try again.');
+      }
+      return data;
+    }
+    function options(name, items, label) {
+      document.querySelectorAll('select[name="' + name + '"]').forEach(select => {
+        const previous = select.value;
+        select.replaceChildren(new Option(items.length ? 'Select an option' : 'No records yet — add one below', ''));
+        items.forEach(item => select.add(new Option(label(item), item.id)));
+        if (items.some(item => String(item.id) === previous)) select.value = previous;
+      });
+    }
+    function rows(id, records, columns, emptyText) {
+      const body = document.getElementById(id);
+      body.replaceChildren();
+      records.forEach(record => {
+        const row = body.insertRow();
+        columns.forEach(column => { row.insertCell().textContent = column(record) ?? '—'; });
+      });
+      if (!records.length) {
+        const cell = body.insertRow().insertCell();
+        cell.colSpan = columns.length;
+        cell.textContent = emptyText;
+      }
+    }
+    async function refresh() {
+      const [departments, officers, trainings, nominations] = await Promise.all(
+        ['departments', 'officers', 'trainings', 'nominations'].map(path => api(path))
+      );
+      options('departmentId', departments, d => d.name);
+      options('officerId', officers, o => o.name + ' (' + o.officerNo + ')');
+      options('trainingId', trainings, t => t.title + ' — ' + t.trainingDate);
+      rows('trainings', trainings, [t => t.title, t => t.trainingDate, t => t.venue, t => t.trainer,
+        t => nominations.filter(n => n.training?.id === t.id).length + ' / ' + t.maxParticipants], 'No training programmes yet.');
+      rows('nominations', nominations, [n => n.officer?.name, n => n.officer?.officerNo,
+        n => n.training?.title, n => n.nominatedByDepartment?.name], 'No nominations yet.');
+    }
+    function connectForm(id, endpoint, transform, success) {
+      const form = document.getElementById(id);
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const button = form.querySelector('button');
+        const values = Object.fromEntries(new FormData(form));
+        for (const key of Object.keys(values)) values[key] = values[key].trim();
+        if (Array.from(form.querySelectorAll('[required]')).some(input => !values[input.name])) {
+          notify('Please complete all required fields using non-blank values.', true);
+          return;
+        }
+        button.disabled = true;
+        try {
+          await api(endpoint, transform(values));
+          form.reset();
+          notify(success);
+          try { await refresh(); } catch (error) {
+            notify(success + ' Records could not refresh. Click Refresh records. ' + error.message, true);
+          }
+        } catch (error) { notify(error.message || 'Unable to connect to the server.', true); }
+        finally { button.disabled = false; }
+      });
+    }
+    connectForm('department-form', 'departments', v => v, 'Department added.');
+    connectForm('officer-form', 'officers', v => ({ officerNo: v.officerNo, name: v.name,
+      email: v.email, department: { id: Number(v.departmentId) } }), 'Officer added.');
+    connectForm('training-form', 'trainings', v => ({ ...v, maxParticipants: Number(v.maxParticipants) }), 'Training programme created.');
+    connectForm('nomination-form', 'nominations', v => ({ trainingId: Number(v.trainingId),
+      officerId: Number(v.officerId), departmentId: Number(v.departmentId) }), 'Nomination registered successfully.');
+    document.getElementById('refresh').addEventListener('click', async event => {
+      const button = event.currentTarget;
+      button.disabled = true;
+      try { await refresh(); notify('Records refreshed.'); }
+      catch (error) { notify('Could not load records: ' + error.message, true); }
+      finally { button.disabled = false; }
+    });
+    refresh().catch(error => notify('Could not load records. Check that the application and MySQL database are running. ' + error.message, true));
+  </script>
+</body>
+</html>
